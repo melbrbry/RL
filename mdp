@@ -1,6 +1,6 @@
 # Basic functions for MDP planning and learning
 # Luca Iocchi 2015
-
+# Mahmoud Elbarbari 2016
 import random
 
 # Domain independent functions
