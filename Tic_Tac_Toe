@@ -1,0 +1,209 @@
+# Tic-Tac-Toe
+# Mahmoud Elbarbari 2016
+
+import sys
+from mdp import *
+
+# MDP definition for tic-tac-toe 3 by 3
+# Notes:
+# 1- X plays first
+# 2- Agent plays with O
+
+rows = cols = 3
+S = []
+A = []
+deltaS = { }
+finalS = []
+winS = []
+loseS = []
+reward = { }
+
+
+def to2D(i):
+    return [i//rows, i%rows]
+"""
+def to1D(x):
+    return x[0]*rows + x[1]
+"""
+def wins(state, player):
+    rowWin = [0]*rows
+    colWin = [0]*cols
+    PrimDiagWin = SecDiagWin = 0
+    for i in range(len(state)):
+        if state[i] == player:
+            play = to2D(i)
+            rowWin[play[0]] += 1
+            colWin[play[1]] += 1
+            if play[0] == play[1]:
+                PrimDiagWin += 1
+            if play[0]+play[1] == rows-1:
+                SecDiagWin += 1
+            if rowWin[play[0]]==rows or colWin[play[0]]==rows or PrimDiagWin==rows or SecDiagWin==rows:
+                return True
+    return False
+
+"""
+def genStates(i=0, state=s0, c='X'):
+    S.append(state)
+    if i == rows*cols or wins(state, 'X') or wins(state, 'O'):
+        finalS.append(state)
+        if wins(state, 'X'):
+            #print("win X", state)
+            reward[state] = -1
+            loseS.append(state)
+        if wins(state, 'O'):
+            #print("win O", state)
+            reward[state] = 1
+            winS.append(state)
+        return
+    for j in range(rows*cols):
+        if state[j] == '.':
+            stateTmp = list(state)
+            stateTmp[j] = c
+            nxtPlayer = 'X'
+            if c=='X':
+                nxtPlayer = 'O'
+            genStates(i+1, ''.join(stateTmp), nxtPlayer)
+"""
+
+"""
+def checkFinal(s):
+    if wins(s, 'X') or wins(s, 'O'):
+        return True
+    for x in s:
+        if x == '.':
+            return False
+    return True
+"""
+
+def genStates(i=0, s=''):
+    if i == cols*rows:
+        S.append(s)
+        if wins(s, 'X') or wins(s, 'O') or not('.' in s):
+            finalS.append(s)
+            if wins(s, 'X'):
+                reward[s] = -1
+                loseS.append(s)
+            if wins(s, 'O'):
+                reward[s] = 1
+                winS.append(s)
+        return
+    for x in ['X', 'O', '.']:
+        genStates(i+1, s+x)
+
+"""
+def refineStates():
+    for s in Sb:
+        if (s.count('X') in [s.count('O')+1, s.count('O')]) and  not (wins(s, 'X') and wins(s, 'O')):
+            S.append(s)
+            if wins(s, 'O'):
+                reward[s] = 1
+                winS.append(s)
+            if wins(s, 'X'):
+                reward[s] = -1
+                loseS.append(s)
+            if checkFinal(s):
+                finalS.append(s)
+    for s in finalS:
+        S.append(s)
+"""
+
+def genActions():
+    for i in range(rows*cols):
+        A.append(i)
+
+# the opponent plays in the first empty place, if there's one
+def opponentPlay(s):
+    for i in range(len(s)):
+        if s[i]=='.':
+            s[i] = 'X'
+            break
+    return s
+
+def genTransitions():
+    for state in S:
+        if not (state in finalS):
+            for action in A:
+                if state[action] == '.':
+                    newState = list(state)
+                    newState[action] = 'O'
+                    if not wins(newState, 'O'):
+                        newState = opponentPlay(newState)
+                    deltaS[(state, action)] = ''.join(newState)
+
+def init():
+    # generate all possible (valid) states & the final states too
+    genStates()
+    #print(len(Sb))
+    #refineStates()
+    #print(len(S))
+    # generate all possible actions (plays)
+    genActions()
+    # generate the transitions
+    genTransitions()
+
+def printState(s):
+    for i in range(len(s)):
+        if i%3==0:
+            print('')
+        print(s[i], end='')
+
+def trace(s):
+    printState(s)
+    while not s in finalS:
+        print('')
+        s = delta(s, pi[''.join(s)])
+        printState(s)
+
+
+
+###
+def delta(s, a):
+    if (s,a) in deltaS:
+        return deltaS[(s,a)]
+    else:
+        return None
+
+def delta_exec(s, a):
+    return delta(s,a)
+
+def P(s1,a,s2): # transition probability
+    if (delta(s1,a) == s2):
+        return 1
+    else:
+        return 0
+
+def r(s1,a,s2): # reward value
+    if s2 in reward:
+        return reward[s2]
+    else:
+        return 0
+
+# main
+# Options: [Planning/Learning] [niterations] [epsilon]
+
+
+gamma=0.9
+epsilon=0.5
+alpha=1.0
+mode='Planning'
+if (len(sys.argv)>1):
+    mode=sys.argv[1]
+if (len(sys.argv)>2):
+    niter=int(sys.argv[2])
+if (len(sys.argv)>3):
+    epsilon=float(sys.argv[3])
+
+# initialize the Tic-Tac-Toe problem
+init()
+
+if mode=='Planning':
+    niter=3
+    V = valueIteration(S,A,P,r,finalS,delta,gamma,niter)
+    pi = optimalPolicyV(V,S,A,P,r,finalS,delta,gamma)
+    s0 = "X........"
+    print(V[s0])
+    trace(s0)
+
+    #print ("Optimal policy: ",pi)
+    #execTrace(s0,winS, loseS,finalS,delta_exec,r,gamma,pi)
