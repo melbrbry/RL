@@ -38,9 +38,9 @@ grid = [['*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*'
         ['*','.','$','$','.','$','$','$','$','$','$','$','$','$','$','.','.','*'], # 5
         ['*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*']] # 6
 alpha = 0.2
-epsilon = 0.1
+epsilon = 0.05
 gamma = 0.8
-iterNo = 1000
+iterNo = 500
 ftNo = 4
 actionsNo=4
 dx = [0,0,-1,1]
@@ -105,7 +105,7 @@ def getFeatures(s, a):
             #print("Ghost")
     if sPrime in ghosts:
         cnt+=1
-    f.append(cnt/len(ghosts))
+    f.append(cnt)
     # if agent can eat a biscuit
     if grid[sPrime[0]][sPrime[1]]=='$':
         f.append(1)
@@ -113,7 +113,7 @@ def getFeatures(s, a):
         f.append(0)
     # nearest Biscuits
     dist = nearestBisc(sPrime)
-    dist /= float(rows+cols+1)
+    dist /= float(rows*cols)
     f.append(dist)
     # divide all by 10.0
     for i in range(ftNo):
@@ -191,16 +191,22 @@ def qLearning():
     global grid
     global ghosts
     for it in range(iterNo):
-        #alpha = max(alpha-0.005, 0.2)
-        #epsilon = max(epsilon-0.01, 0.0)
-        #if it+1==100:
-         #   epsilon=0
-          #  alpha=0
-        ghosts = [[3,3]] #no ghosts
+        # alpha = max(alpha-0.002, 0.001)
+        # epsilon = max(epsilon-0.001, 0.005)
+        # it seems that alpha=0.2 and epsilon=0.05 perform best
+        # stop learning after some iteration
+        # Because at this point I don't wanna make stupid moves in the name of "exploration",
+        # I know that I've learnt, to some extend, the optimal policy
+        # And I also know that my estimate of the weights oscillates "maybe too much",
+        # so it seems to be a good idea to stop this at some point
+        if it+1==25:
+            epsilon=0
+            alpha=0
+        ghosts = [[3,3], [3,3]] #no ghosts
         #         0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
         grid = [['*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*'],  # 0
                 ['*', '.', '$', '$', '$', '$', '.', '$', '.', '$', '$', '$', '$', '$', '$', '$', '$', '*'],  # 1
-                ['*', '$', '*', '$', '*', '$', '*', '*', '.', '*', '*', '$', '*', '.', '*', '*', '$', '*'],  # 2
+                ['*', '$', '*', '$', '*', '$', '*', '*', '.', '*', '*', '$', '$', '.', '*', '*', '$', '*'],  # 2
                 ['*', '.', '.', '$', '*', '.', '*', '$', '$', '$', '$', '$', '*', '$', '$', '$', '$', '*'],  # 3
                 ['*', '$', '*', '$', '*', '$', '*', '.', '*', '*', '*', '$', '*', '$', '$', '*', '$', '*'],  # 4
                 ['*', '.', '$', '$', '.', '$', '$', '$', '$', '$', '$', '$', '$', '$', '$', '.', '.', '*'],  # 5
@@ -212,12 +218,12 @@ def qLearning():
         totalReward = 0
         while not (bisc==0): #loop until no biscuits are remaining
             xxx = 1
-            #if it+1 > 100:
+            #if it+1 == 100:
                 #for ii in range(rows):
-                   # print(grid[ii])
+                   #print(grid[ii])
                 #print("Biscuits Number:", bisc)
             a = chooseAction(s)
-            #if it+1 > 100:
+            #if it+1 == 100:
                 #print("State:",s)
                 #print("Ghosts:", end='')
                 #print(ghosts)
@@ -231,7 +237,7 @@ def qLearning():
                 if ghosts[i]==sPrime:
                     v.append(i)
             moveGhosts()
-            #if it + 1 > 100:
+            #if it + 1 == 100:
                 #print("Ghosts After:",ghosts)
             for i in range(len(ghosts)):
                 if i in v and ghosts[i]==s:
@@ -260,11 +266,13 @@ def qLearning():
             #print(w)
             s[0] = sPrime[0]
             s[1] = sPrime[1]
-        if it>100 and bisc!=0:
+
+        if bisc!=0:
             err+=1
         print("Iteration No.:", it+1)
         print("weights: ", end='')
         print(weights)
+        print("Bisuits remaining: ", bisc)
         #print("Total Reward:", totalReward)
         avgReward += totalReward
     #print("Average Reward:", avgReward/iterNo)
