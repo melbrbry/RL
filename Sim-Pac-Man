@@ -37,16 +37,16 @@ grid = [['*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*'
         ['*','$','*','$','*','$','*','.','*','*','*','$','*','$','$','*','$','*'], # 4
         ['*','.','$','$','.','$','$','$','$','$','$','$','$','$','$','.','.','*'], # 5
         ['*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*','*']] # 6
-mb = 20 # mini-batch size, if one -> SGD
-alpha = 0.4
-epsilon = 0.1
+mb = 1 # mini-batch size, if one -> SGD
+alpha = 0.2
+epsilon = 0.05
 gamma = 0.8
 iterNo = 500
 ftNo = 4
 actionsNo=4
-dx = [0,0,-1,1]
-dy = [1,-1,0,0]
-actionName = ['R','L','U','D']
+dx = [0,0,-1,1,0]
+dy = [1,-1,0,0,0]
+actionName = ['R','L','U','D', 'NoOp']
 weights = [0.0, -2.0,  +2.0, -0.5]
 ghosts = []
 
@@ -194,35 +194,19 @@ def qLearning():
     global ghosts
     cnt = 0
     for it in range(iterNo):
-        #alpha = max(alpha-0.0009, 0.00)
-        #epsilon = max(epsilon-0.001, 0.00)
+        alpha = max(alpha-0.0008, 0.00)
+        epsilon = max(epsilon-0.0002, 0.00)
         # it seems that alpha=0.2 and epsilon=0.05 perform best
-        # stop learning after some iteration
-        # Because at this point I don't wanna make stupid moves in the name of "exploration",
-        # I know that I've learnt, to some extend, the optimal policy
-        # And I also know that my estimate of the weights oscillates "maybe too much",
-        # so it seems to be a good idea to stop this at some point
-        # But this is CHEATING! :D
         # Improvement No.1
-        # Ok, Let's try not to CHEAT, and reduce the learning rate gradually
+        # Ok, Let's reduce the learning rate gradually
         # As it has been shown that SGD shows better convergence behaviour, similar to batch GD, when we use this trick
-        # Any yes the number of times the agent fails is reduced from 111 times to 93 times (good improvement)
         # Improvement No.2
         # Let's try to decrease the epsilon too gradually over time.
         # Because towards the end I know that I'm closer to the solution so I don't need to do stupid move in the name
         # of the exploration.
-        # And yes again the number of failes is reduced from 93 times to 82 times (which again is a good improvement)
         # Improvement No.3
-        # There was a serious bug in the code.
-        # I was not checking if there are no ghosts nearby before saying that the biscuit is eatable.
-        # I said it's eatable even if there were adjacent ghosts
-        # Now! a huge improvement from 82 times fails to only 65 times fails.
-        # Improvement No.4
         # Ok... Let's try to update the weights in mini-batches method, instead of SGD.
         # We'll update our guess of the weights every 20 samples.
-        # Now! another pretty good improvement from 65 times fails to only 50 times fails.
-
-        # Total improvement: from 78% success rate to 90% !!
 
         #if it+1==25:
             #epsilon=0
@@ -273,7 +257,7 @@ def qLearning():
             #print(" ,sPrime:", sPrime, end='')
             r = getReward(s, a, sPrime)
             if not xxx or (sPrime in ghosts):
-                r = -100
+                r = -10
             #print(" ,Reward:", r)
             totalReward += r
             qsa = getQ(s, a)
@@ -309,8 +293,11 @@ def qLearning():
         #print("Bisuits remaining: ", bisc)
         #print("Total Reward:", totalReward)
         avgReward += totalReward
-    #print("Average Reward:", avgReward/iterNo)
-    print("No. of fails:", err)
+    avgReward /= iterNo
+    print("Average Reward:", avgReward)
+    print("Success times:", iterNo-err)
+    print("Success rate:", (iterNo-err)/iterNo)
+
 
 qLearning()
 
